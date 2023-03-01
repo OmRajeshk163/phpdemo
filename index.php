@@ -1,70 +1,109 @@
 <?php
-// require "response.php";
-  function promptName(){
-    echo("
-        <script type='text/javascript'> 
-          const name = prompt('Please type your Username.')
-        </script>");
-        $name = "<script type='text/javascript'> document.write(name); </script>";
-        return($name);
+	// function getXMLRes($jwt,$code){
+	// 	$ch = curl_init();
+	// 	$url = 'http://localhost:1337/api/get-xml';
+	// 	$authHeaders = array();
+	// 	$authHeaders[] = "Authorization: Bearer ". $jwt;
+  //   $code_string = http_build_query($code);
+  //   print_r($jwt);
+
+	// 	curl_setopt($ch, CURLOPT_URL,$url);
+  //   curl_setopt($ch, CURLOPT_POST, true);
+	// 	curl_setopt($ch, CURLOPT_POSTFIELDS, $code_string);
+	// 	curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+	// 	curl_setopt($ch, CURLOPT_HTTPHEADER, $authHeaders);
+	// 	$output = curl_exec($ch);
+	// 	if($err=curl_error($ch)){
+	// 		echo $url;
+	// 	} else {
+	// 		header("Access-Control-Allow-Origin: *");
+	// 		header("Content-Type: text/xml; charset=utf-8");
+	// 		echo $output;
+	// 	}
+	// }
+
+	function checkAuth($username, $password){
+		$fields = [
+			"identifier" => $username,
+			"password" => $password
+		];
+		$fields_string = http_build_query($fields);
+		$ch = curl_init();
+		$url = 'http://localhost:1337/api/auth/local';
+
+		curl_setopt($ch,CURLOPT_URL, $url);
+		curl_setopt($ch,CURLOPT_POST, true);
+		curl_setopt($ch,CURLOPT_POSTFIELDS, $fields_string);
+		curl_setopt($ch,CURLOPT_RETURNTRANSFER, true); 
+
+		$response = curl_exec($ch);
+		$auth_resp_array = json_decode($response, true);
+    $name=$auth_resp_array['user']['username'];
+    $ch = curl_init();
+		$url = 'http://localhost:1337/api/get-feed-by-name/'.$name;
+		curl_setopt($ch,CURLOPT_URL,$url);
+		curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+    $resp_array = json_decode(curl_exec($ch), true);
+		if(isset($resp_array['error'])){
+			echo 'Invalid Credientials';
+		} else {
+			$jwt = $auth_resp_array['jwt'];
+      $code=$resp_array["advance_editor_value"];
+      ob_end_clean();
+      // getXMLRes($jwt,$code);
+      getXMLResNoAuth($code);
+		}
+	}
+  // Check for encryption
+  checkForEncryption();
+  function checkForEncryption(){
+    
+    $name=$_GET['name'];
+    $ch = curl_init();
+		$url = 'http://localhost:1337/api/get-feed-by-name/'.$name;
+		curl_setopt($ch,CURLOPT_URL,$url);
+		curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+    $resp_array = json_decode(curl_exec($ch), true);
+    $encryption=$resp_array["encryption"];
+    echo '<body style=\'text-align:center\'>
+            <form  method="post">
+              Username: <input type = "text" name = "name" />
+              Password: <input type = "password" name = "password" />
+              <input type = "submit" />
+            </form>
+          </body>';
+    if(!$encryption){
+      $code=$resp_array["advance_editor_value"];
+      ob_end_clean();
+      getXMLResNoAuth($code);
+    }else if($encryption){
+        if(isset($_POST['name']) || isset($_POST['password'])){
+          if( $_POST["name"] || $_POST["password"] ) {
+            checkAuth($_POST["name"], $_POST["password"]);
+            exit();
+          }
+        }
     }
-    function promptPassword(){
-        echo("
-        <script type='text/javascript'> 
-          const password = prompt('Please type your Password.');
-        </script>");
-        $password = "<script type='text/javascript'> document.write(password); </script>";
-        return($password);
-    }
-
-
-
-ob_start();
-
-
-  $name = promptName($prompt_name);
-  $password = promptPassword($prompt_Password);
-  // $html = preg_replace('#<script(.*?)>(.*?)</script>#is', '', $html);
-  // echo "<a href='response.php'>next</a>";
-
-  function getXMLRes(){
-  $ch = curl_init();
-  $url = 'http://localhost:1337/api/get-xml';
-  curl_setopt($ch,CURLOPT_URL,$url);
-  curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
-  $output = curl_exec($ch);
-  if($e=curl_error($ch)){
-    echo $e;
-  }else{
-    // header("Access-Control-Allow-Origin: *");
-    header("Content-Type: text/xml; charset=utf-8");
-    // print_r($decoded);
-    // ob_clean();
-    echo $output;
-    // return $output;
   }
-}
-readline ( "Press Enter to continue, or Ctrl+C to cancel." );
-echo ob_get_level();
 
-if(strlen($name)>0 && strlen($password)>0)
-{
-  // if(ob_get_level()>0){
-  //   ob_end_clean();
-  // }
-  // sleep(10);
-  // ob_end_clean();
-    //  getXMLRes();
-    // require "response.php";
-}
-
-
-  // if(strlen($name)>0 && strlen($password)>0){
-  // // header('Location: response.php');
-  //   // getXMLRes($name,$password);
+  function getXMLResNoAuth($code){
     
-  // //  echo "jfb";
-  // }
 
-    
+		$ch = curl_init();
+		$url = 'http://localhost:1337/api/get-xml-php';
+		curl_setopt($ch,CURLOPT_URL,$url);
+    curl_setopt($ch,CURLOPT_POST, true);
+    $code_string = http_build_query($code);
+		curl_setopt($ch,CURLOPT_POSTFIELDS, $code_string);
+		curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+		$output = curl_exec($ch);
+
+		if($err=curl_error($ch)){
+			echo $url;
+		} else {
+			header("Access-Control-Allow-Origin: *");
+      header("Content-Type: text/xml; charset=UTF-8");
+			echo $output;
+		}
+	}
 ?>

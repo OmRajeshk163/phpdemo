@@ -8,7 +8,7 @@
   function checkForEncryption(){
     $name=$_GET['name'];
     $ch = curl_init();
-		$url = baseUrl().'get-feed-by-name/'.$name;
+		$url = baseUrl().'get-feed-by-client-name/'.$name;
 		curl_setopt($ch,CURLOPT_URL,$url);
 		curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
     $resp_array = json_decode(curl_exec($ch), true);
@@ -20,7 +20,12 @@
     }else{
       if($active){
         if(!$encryption){
-          $code=$resp_array["advance_editor_value"];
+          if(is_null($resp_array["advance_editor_value"])){
+						$code=new stdClass();
+					}else{
+						$code = new stdClass();
+						$code->code=$resp_array["advance_editor_value"];
+					}
           ob_end_clean();
           getXMLResNoAuth($code);
         }else if($encryption){
@@ -53,7 +58,7 @@
 
     // Get the feed by client Username
     $ch = curl_init();
-		$url = baseUrl().'get-feed-by-name/'.$name;
+		$url = baseUrl().'get-feed-by-client-name/'.$name;
 		curl_setopt($ch,CURLOPT_URL,$url);
 		curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
 		curl_setopt($ch, CURLOPT_HTTPHEADER, $authHeaders);
@@ -65,9 +70,14 @@
 			echo '<h2>{"error":"You must ask the owner of this resource for the credentials"}</h2>';
       exit;
 		} else {
-      $code = $resp_array["advance_editor_value"];
-      $jwt = $auth_resp_array['jwt'];
+			$jwt = $auth_resp_array['jwt'];
       ob_end_clean();
+			if(is_null($resp_array["advance_editor_value"])){
+				$code=new stdClass();
+			}else{
+				$code = new stdClass();
+				$code->code=$resp_array["advance_editor_value"];
+			}
       getXMLRes($jwt,$code);
 		}
 	}
@@ -96,7 +106,7 @@
   // Get the feed for Unauthorized User
   function getXMLResNoAuth($code){
 		$ch = curl_init();
-		$url = baseUrl().'get-xml-php';
+		$url = baseUrl().'get-xml-unauth';
 		curl_setopt($ch,CURLOPT_URL,$url);
     curl_setopt($ch,CURLOPT_POST, true);
     $code_string = http_build_query($code);

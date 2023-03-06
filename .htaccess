@@ -1,0 +1,2 @@
+RewriteEngine On    # Turn on the rewriting engine
+RewriteRule    ^customfeeds/([A-Za-z0-9-]+)/([A-Za-z0-9-]+)/([a-zA-Z0-9.]+)/?$/?$/?$    customfeeds.php?type=$1&name=$2&format=$3    [NC,L]    # Handle product requests
